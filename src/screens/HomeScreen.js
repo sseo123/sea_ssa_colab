@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -79,26 +79,27 @@ function StatCard({ stat }) {
   );
 }
 
+function makeParticles() {
+  return Array.from({ length: 60 }, (_, i) => ({
+    id: i,
+    // Spread across the full width, slightly inset so pieces aren't clipped.
+    x: 8 + Math.random() * (SCREEN_W - 24),
+    // Stagger so a continuous rain falls from the top.
+    delay: Math.random() * 600,
+    duration: 2200 + Math.random() * 1000,
+    drift: (Math.random() - 0.5) * 160,
+    spin: (Math.random() > 0.5 ? 1 : -1) * (220 + Math.random() * 400),
+    size: 10 + Math.random() * 12,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    shape: i % 3 === 0 ? 'block' : i % 3 === 1 ? 'circle' : 'ghost',
+  }));
+}
+
 function ConfettiBurst({ active, onDone }) {
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 48 }, (_, i) => ({
-        id: i,
-        x: Math.random() * SCREEN_W,
-        delay: Math.random() * 280,
-        duration: 1800 + Math.random() * 900,
-        drift: (Math.random() - 0.5) * 140,
-        spin: (Math.random() > 0.5 ? 1 : -1) * (180 + Math.random() * 360),
-        size: 7 + Math.random() * 10,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        shape: i % 3 === 0 ? 'block' : i % 3 === 1 ? 'circle' : 'ghost',
-      })),
-    [],
-  );
-
+  const particles = useRef(makeParticles()).current;
   const anims = useRef(particles.map(() => new Animated.Value(0))).current;
   const banner = useRef(new Animated.Value(0)).current;
 
@@ -128,89 +129,99 @@ function ConfettiBurst({ active, onDone }) {
       }),
     );
 
-    Animated.parallel(runs).start(({ finished }) => {
+    const anim = Animated.parallel(runs);
+    anim.start(({ finished }) => {
       if (finished) onDoneRef.current?.();
     });
 
-    return undefined;
+    return () => anim.stop();
   }, [active, anims, banner, particles]);
 
-  if (!active) return null;
-
   return (
-    <View style={styles.confettiLayer} pointerEvents="none">
-      <Animated.View
-        style={[
-          styles.celebrateBanner,
-          {
-            opacity: banner,
-            transform: [
-              {
-                scale: banner.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.7, 1],
-                }),
-              },
-              {
-                translateY: banner.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [20, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <Text style={styles.celebrateEyebrow}>SNAP × ROBLOX</Text>
-        <Text style={styles.celebrateTitle}>Streak day secured!</Text>
-        <Text style={styles.celebrateSub}>Thursday checked · keep it going</Text>
-      </Animated.View>
+    <Modal
+      visible={active}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={() => onDoneRef.current?.()}
+    >
+      <View style={styles.confettiLayer} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            styles.celebrateBanner,
+            {
+              opacity: banner,
+              transform: [
+                {
+                  scale: banner.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.7, 1],
+                  }),
+                },
+                {
+                  translateY: banner.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.celebrateEyebrow}>SNAP × ROBLOX</Text>
+          <Text style={styles.celebrateTitle}>Streak day secured!</Text>
+          <Text style={styles.celebrateSub}>Thursday checked · keep it going</Text>
+        </Animated.View>
 
-      {particles.map((p, i) => {
-        const progress = anims[i];
-        const translateY = progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [-40, SCREEN_H + 40],
-        });
-        const translateX = progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, p.drift],
-        });
-        const rotate = progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: ['0deg', `${p.spin}deg`],
-        });
-        const opacity = progress.interpolate({
-          inputRange: [0, 0.1, 0.8, 1],
-          outputRange: [0, 1, 1, 0],
-        });
+        {particles.map((p, i) => {
+          const progress = anims[i];
+          // Start just above the top edge, fall all the way past the bottom.
+          const translateY = progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-40, SCREEN_H + 80],
+          });
+          const translateX = progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, p.drift],
+          });
+          const rotate = progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0deg', `${p.spin}deg`],
+          });
+          const opacity = progress.interpolate({
+            inputRange: [0, 0.02, 0.85, 1],
+            outputRange: [0, 1, 1, 0],
+          });
 
-        const pieceStyle =
-          p.shape === 'circle'
-            ? { borderRadius: p.size / 2 }
-            : p.shape === 'ghost'
-              ? { borderRadius: p.size / 2.5, width: p.size * 0.75 }
-              : { borderRadius: 2 };
+          const pieceStyle =
+            p.shape === 'circle'
+              ? { borderRadius: p.size / 2 }
+              : p.shape === 'ghost'
+                ? { borderRadius: p.size / 2.5, width: p.size * 0.75 }
+                : { borderRadius: 2 };
 
-        return (
-          <Animated.View
-            key={p.id}
-            style={[
-              styles.confettiPiece,
-              {
-                left: p.x,
-                width: p.size,
-                height: p.size * (p.shape === 'block' ? 1 : 1.35),
-                backgroundColor: p.color,
-                opacity,
-                transform: [{ translateY }, { translateX }, { rotate }],
-                ...pieceStyle,
-              },
-            ]}
-          />
-        );
-      })}
-    </View>
+          return (
+            <Animated.View
+              key={p.id}
+              style={[
+                styles.confettiPiece,
+                {
+                  left: p.x,
+                  top: 0,
+                  width: p.size,
+                  height: p.size * (p.shape === 'block' ? 1 : 1.35),
+                  backgroundColor: p.color,
+                  opacity,
+                  transform: [{ translateY }, { translateX }, { rotate }],
+                  ...pieceStyle,
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+    </Modal>
   );
 }
 
@@ -687,20 +698,23 @@ const styles = StyleSheet.create({
     color: colors.onYellow,
   },
 
-  // Confetti
+  // Confetti — rendered in a full-screen Modal so it sits above tabs + content
   confettiLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 50,
-    elevation: 50,
+    flex: 1,
+    width: SCREEN_W,
+    height: SCREEN_H,
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
   },
   confettiPiece: {
     position: 'absolute',
-    top: 0,
+    zIndex: 1,
   },
   celebrateBanner: {
     position: 'absolute',
-    top: SCREEN_H * 0.32,
+    top: '32%',
     alignSelf: 'center',
+    zIndex: 2,
     backgroundColor: colors.cardDark,
     borderWidth: 1,
     borderColor: colors.snapYellow,
