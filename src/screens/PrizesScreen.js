@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -59,10 +59,10 @@ const rewards = [
   },
   {
     id: 'r2',
-    emoji: '🪽',
+    emoji: '👻',
     kind: 'roblox',
     category: 'ROBLOX ITEM',
-    title: 'Snap Ghost Wings',
+    title: 'Snap Ghost Backpack',
     source: 'Avatar Shop',
     unlocked: true,
     gradient: ['#5E1F2A', '#260E14'],
@@ -156,7 +156,7 @@ function QuestCard({ quest }) {
   );
 }
 
-function RewardCard({ reward }) {
+function RewardCard({ reward, equipped, onEquip }) {
   const accent = reward.kind === 'snap' ? colors.snapYellow : colors.robloxRed;
   const badgeFg = reward.kind === 'snap' ? colors.onYellow : colors.onDark;
   return (
@@ -169,14 +169,29 @@ function RewardCard({ reward }) {
           </View>
         )}
       </LinearGradient>
-      <Text style={[styles.rewardCategory, { color: reward.unlocked ? accent : colors.onDarkMuted }]}>
-        {reward.category}
-      </Text>
-      <Text style={styles.rewardTitle}>{reward.title}</Text>
-      <Text style={styles.rewardSource}>{reward.source}</Text>
+      <View style={styles.rewardCopy}>
+        <Text style={[styles.rewardCategory, { color: reward.unlocked ? accent : colors.onDarkMuted }]}>
+          {reward.category}
+        </Text>
+        <Text style={styles.rewardTitle} numberOfLines={2}>
+          {reward.title}
+        </Text>
+        <Text style={styles.rewardSource} numberOfLines={1}>
+          {reward.source}
+        </Text>
+      </View>
       {reward.unlocked ? (
-        <Pressable style={({ pressed }) => [styles.equipBtn, { backgroundColor: accent }, pressed && styles.pressed]}>
-          <Text style={[styles.equipText, { color: badgeFg }]}>Equip</Text>
+        <Pressable
+          onPress={() => onEquip(reward)}
+          style={({ pressed }) => [
+            styles.equipBtn,
+            { backgroundColor: equipped ? colors.onlineGreen : accent },
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={[styles.equipText, { color: equipped ? colors.onDark : badgeFg }]}>
+            {equipped ? 'Equipped' : 'Equip'}
+          </Text>
         </Pressable>
       ) : (
         <View style={styles.lockedBtn}>
@@ -189,10 +204,27 @@ function RewardCard({ reward }) {
 
 export default function PrizesScreen({ onBack }) {
   const [tab, setTab] = useState('quests');
+  const [equippedIds, setEquippedIds] = useState({});
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const handleEquip = (reward) => {
+    setEquippedIds((prev) => ({ ...prev, [reward.id]: true }));
+    setToast(`Equipped ${reward.title}`);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AppHeader onBack={onBack} />
+      {toast && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
+      )}
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.heading}>Prizes</Text>
         <Text style={styles.subheading}>Complete quests, unlock rewards</Text>
@@ -238,7 +270,12 @@ export default function PrizesScreen({ onBack }) {
             </View>
             <View style={styles.rewardGrid}>
               {rewards.map((r) => (
-                <RewardCard key={r.id} reward={r} />
+                <RewardCard
+                  key={r.id}
+                  reward={r}
+                  equipped={!!equippedIds[r.id]}
+                  onEquip={handleEquip}
+                />
               ))}
             </View>
             <View style={styles.lockedBanner}>
@@ -488,6 +525,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorderDark,
     padding: spacing.md,
+    // Keep every card the same height regardless of title length.
+    minHeight: 292,
   },
   rewardLocked: {
     opacity: 0.55,
@@ -517,6 +556,10 @@ const styles = StyleSheet.create({
     fontFamily: type.bodySemibold,
     fontSize: 13,
   },
+  rewardCopy: {
+    flexGrow: 1,
+    marginBottom: spacing.md,
+  },
   rewardCategory: {
     fontFamily: type.mono,
     fontSize: 10,
@@ -525,6 +568,8 @@ const styles = StyleSheet.create({
   rewardTitle: {
     fontFamily: type.bodySemibold,
     fontSize: 15,
+    lineHeight: 20,
+    height: 40, // reserve exactly 2 lines for every card
     color: colors.onDark,
     marginTop: 5,
   },
@@ -532,13 +577,13 @@ const styles = StyleSheet.create({
     fontFamily: type.body,
     fontSize: 12,
     color: colors.onDarkMuted,
-    marginTop: 1,
-    marginBottom: spacing.md,
+    marginTop: 2,
   },
   equipBtn: {
     borderRadius: radii.pill,
     paddingVertical: 11,
     alignItems: 'center',
+    marginTop: 'auto',
   },
   equipText: {
     fontFamily: type.bodySemibold,
@@ -551,6 +596,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: colors.cardBorderDark,
+    marginTop: 'auto',
   },
   lockedBtnText: {
     fontFamily: type.bodySemibold,
@@ -570,5 +616,19 @@ const styles = StyleSheet.create({
     fontFamily: type.bodyMedium,
     fontSize: 13,
     color: colors.onDarkMuted,
+  },
+  toast: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.snapYellow,
+    borderRadius: radii.pill,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+  },
+  toastText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 14,
+    color: colors.onYellow,
   },
 });

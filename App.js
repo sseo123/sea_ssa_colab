@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts as useSpaceGrotesk, SpaceGrotesk_700Bold, SpaceGrotesk_500Medium } from '@expo-google-fonts/space-grotesk';
 import { useFonts as useInter, Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { useFonts as usePlexMono, IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono';
+import { useFonts as useDMSans, DMSans_500Medium, DMSans_600SemiBold } from '@expo-google-fonts/dm-sans';
 import LandingScreen from './src/screens/LandingScreen';
 import RootTabs from './src/navigation/RootTabs';
 import { colors } from './src/theme/theme';
@@ -13,9 +14,11 @@ export default function App() {
   const [sgLoaded] = useSpaceGrotesk({ SpaceGrotesk_700Bold, SpaceGrotesk_500Medium });
   const [interLoaded] = useInter({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
   const [plexLoaded] = usePlexMono({ IBMPlexMono_600SemiBold });
+  // DM Sans is Snap's public alternate for proprietary Ghost Sans.
+  const [dmLoaded] = useDMSans({ DMSans_500Medium, DMSans_600SemiBold });
   const [entered, setEntered] = useState(false);
 
-  const fontsReady = sgLoaded && interLoaded && plexLoaded;
+  const fontsReady = sgLoaded && interLoaded && plexLoaded && dmLoaded;
 
   if (!fontsReady) {
     return (

@@ -374,9 +374,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   eyebrow: {
-    fontFamily: type.mono,
-    fontSize: 12,
-    letterSpacing: 2,
+    fontFamily: type.ghostSansSemibold,
+    fontSize: 13,
+    letterSpacing: 1.2,
     color: colors.snapYellow,
     marginBottom: spacing.lg,
   },

@@ -34,6 +34,9 @@ export const type = {
   bodyMedium: 'Inter_500Medium',
   bodySemibold: 'Inter_600SemiBold',
   mono: 'IBMPlexMono_600SemiBold',
+  // Snap Ghost Sans stand-in (DM Sans — Snap brand alt when Ghost Sans isn't available)
+  ghostSans: 'DMSans_500Medium',
+  ghostSansSemibold: 'DMSans_600SemiBold',
 };
 
 export const spacing = {

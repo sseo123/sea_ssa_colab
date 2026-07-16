@@ -47,8 +47,8 @@ export const friendSuggestions = [
   },
   {
     id: 'f2',
-    name: 'Deshawn',
-    avatar: require('../../assets/avatars/avatar-deshawn.png'),
+    name: 'Shawn',
+    avatar: require('../../assets/avatars/avatar-shawn.png'),
     mutual: 'Plays your Roblox game',
     suggestFor: 'snap',
   },
