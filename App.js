@@ -27,8 +27,12 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      {entered ? <RootTabs /> : <LandingScreen onEnter={() => setEntered(true)} />}
+      <StatusBar style={entered ? 'light' : 'dark'} />
+      {entered ? (
+        <RootTabs onExit={() => setEntered(false)} />
+      ) : (
+        <LandingScreen onEnter={() => setEntered(true)} />
+      )}
     </SafeAreaProvider>
   );
 }

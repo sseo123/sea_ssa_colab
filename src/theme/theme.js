@@ -23,6 +23,8 @@ export const colors = {
   onDarkMuted: 'rgba(255,255,255,0.62)',
   onYellow: '#0A0A0A',
   onYellowMuted: 'rgba(10,10,10,0.62)',
+  robloxRed: '#FF3B3B',
+  onlineGreen: '#3BD16F',
 };
 
 export const type = {
