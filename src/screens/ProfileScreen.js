@@ -102,8 +102,8 @@ export default function ProfileScreen({ onBack }) {
               <Text style={styles.editBadgeGlyph}>✎</Text>
             </View>
           </View>
-          <Text style={styles.name}>Player</Text>
-          <Text style={styles.handle}>@snapblox_player · Day 4 Streak</Text>
+          <Text style={styles.name}>Marketing Boss</Text>
+          <Text style={styles.handle}>@daniel_da_destroyer · Day 4 Streak</Text>
         </View>
 
         {/* Stats */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,28 @@ import {
   Pressable,
   Image,
   Modal,
+  Animated,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../components/AppHeader';
 import { colors, type, spacing, radii } from '../theme/theme';
 
 const lensSnapcode = require('../../assets/roblox-lens-snapcode.png');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+// Transforms/opacity don't animate via the native driver on web, which left
+// every particle stuck at opacity 0. Drive on JS thread when running on web.
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+
+const CONFETTI_COLORS = [
+  colors.snapYellow,
+  colors.robloxRed,
+  '#FFFFFF',
+  '#FFFC00',
+  '#FF3B3B',
+  '#FFD166',
+];
 
 const friendsOnline = [
   { name: 'jayden_r', avatar: require('../../assets/avatars/avatar-jayden.png'), platform: 'snap' },
@@ -22,13 +38,15 @@ const friendsOnline = [
   { name: 'noob_pl', avatar: require('../../assets/avatars/avatar-noob.png'), platform: 'roblox' },
 ];
 
-const streakDays = [
+const INITIAL_STREAK_DAYS = [
   { label: 'M', done: true },
   { label: 'T', done: true },
   { label: 'W', done: true },
-  { label: 'T', done: true },
+  { label: 'T', done: false }, // Thursday — unlocks after Submit
   { label: 'F', done: false },
 ];
+
+const THURSDAY_INDEX = 3;
 
 const stats = [
   { label: 'Quests done', value: '3/5' },
@@ -61,7 +79,142 @@ function StatCard({ stat }) {
   );
 }
 
-function LensModal({ visible, onClose }) {
+function ConfettiBurst({ active, onDone }) {
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 48 }, (_, i) => ({
+        id: i,
+        x: Math.random() * SCREEN_W,
+        delay: Math.random() * 280,
+        duration: 1800 + Math.random() * 900,
+        drift: (Math.random() - 0.5) * 140,
+        spin: (Math.random() > 0.5 ? 1 : -1) * (180 + Math.random() * 360),
+        size: 7 + Math.random() * 10,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        shape: i % 3 === 0 ? 'block' : i % 3 === 1 ? 'circle' : 'ghost',
+      })),
+    [],
+  );
+
+  const anims = useRef(particles.map(() => new Animated.Value(0))).current;
+  const banner = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!active) {
+      anims.forEach((a) => a.setValue(0));
+      banner.setValue(0);
+      return undefined;
+    }
+
+    anims.forEach((a) => a.setValue(0));
+    banner.setValue(0);
+
+    Animated.spring(banner, {
+      toValue: 1,
+      friction: 6,
+      tension: 80,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start();
+
+    const runs = particles.map((p, i) =>
+      Animated.timing(anims[i], {
+        toValue: 1,
+        duration: p.duration,
+        delay: p.delay,
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
+    );
+
+    Animated.parallel(runs).start(({ finished }) => {
+      if (finished) onDoneRef.current?.();
+    });
+
+    return undefined;
+  }, [active, anims, banner, particles]);
+
+  if (!active) return null;
+
+  return (
+    <View style={styles.confettiLayer} pointerEvents="none">
+      <Animated.View
+        style={[
+          styles.celebrateBanner,
+          {
+            opacity: banner,
+            transform: [
+              {
+                scale: banner.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.7, 1],
+                }),
+              },
+              {
+                translateY: banner.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <Text style={styles.celebrateEyebrow}>SNAP × ROBLOX</Text>
+        <Text style={styles.celebrateTitle}>Streak day secured!</Text>
+        <Text style={styles.celebrateSub}>Thursday checked · keep it going</Text>
+      </Animated.View>
+
+      {particles.map((p, i) => {
+        const progress = anims[i];
+        const translateY = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [-40, SCREEN_H + 40],
+        });
+        const translateX = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, p.drift],
+        });
+        const rotate = progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', `${p.spin}deg`],
+        });
+        const opacity = progress.interpolate({
+          inputRange: [0, 0.1, 0.8, 1],
+          outputRange: [0, 1, 1, 0],
+        });
+
+        const pieceStyle =
+          p.shape === 'circle'
+            ? { borderRadius: p.size / 2 }
+            : p.shape === 'ghost'
+              ? { borderRadius: p.size / 2.5, width: p.size * 0.75 }
+              : { borderRadius: 2 };
+
+        return (
+          <Animated.View
+            key={p.id}
+            style={[
+              styles.confettiPiece,
+              {
+                left: p.x,
+                width: p.size,
+                height: p.size * (p.shape === 'block' ? 1 : 1.35),
+                backgroundColor: p.color,
+                opacity,
+                transform: [{ translateY }, { translateX }, { rotate }],
+                ...pieceStyle,
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+function LensModal({ visible, onClose, onSubmit, alreadyDone }) {
   return (
     <Modal
       visible={visible}
@@ -76,14 +229,25 @@ function LensModal({ visible, onClose }) {
           <Text style={styles.modalTitle}>Scan to open in Snapchat</Text>
           <Image source={lensSnapcode} style={styles.snapcode} resizeMode="contain" />
           <Text style={styles.modalHint}>
-            Point your Snapchat camera at this Snapcode to unlock the Roblox Noob AR Lens.
+            Point your Snapchat camera at this Snapcode to unlock today's Roblox Lens, then hit
+            Submit to log your streak day.
           </Text>
-          <Pressable
-            onPress={onClose}
-            style={({ pressed }) => [styles.modalCloseBtn, pressed && styles.pressed]}
-          >
-            <Text style={styles.modalCloseText}>Close</Text>
-          </Pressable>
+          <View style={styles.modalActions}>
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => [styles.modalGhostBtn, pressed && styles.pressed]}
+            >
+              <Text style={styles.modalGhostText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={onSubmit}
+              style={({ pressed }) => [styles.modalSubmitBtn, pressed && styles.pressed]}
+            >
+              <Text style={styles.modalSubmitText}>
+                {alreadyDone ? 'Done' : 'Submit'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>
@@ -92,13 +256,34 @@ function LensModal({ visible, onClose }) {
 
 export default function HomeScreen({ onBack }) {
   const [lensOpen, setLensOpen] = useState(false);
+  const [streakDays, setStreakDays] = useState(INITIAL_STREAK_DAYS);
+  const [celebrate, setCelebrate] = useState(false);
+  const celebrateTimer = useRef(null);
+
+  const thursdayDone = streakDays[THURSDAY_INDEX].done;
+  const streakCount = streakDays.filter((d) => d.done).length;
+
+  useEffect(() => () => clearTimeout(celebrateTimer.current), []);
+
+  const handleSubmit = () => {
+    setLensOpen(false);
+    if (!thursdayDone) {
+      setStreakDays((days) =>
+        days.map((d, i) => (i === THURSDAY_INDEX ? { ...d, done: true } : d)),
+      );
+      // Wait for the lens modal to finish dismissing before the burst so the
+      // native modal window isn't covering the confetti on the first frames.
+      clearTimeout(celebrateTimer.current);
+      celebrateTimer.current = setTimeout(() => setCelebrate(true), 350);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <AppHeader onBack={onBack} />
+      <AppHeader onBack={onBack} streak={streakCount} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.welcome}>Welcome back, Player</Text>
-        <Text style={styles.streakTitle}>Day 4 Streak</Text>
+        <Text style={styles.welcome}>Welcome back, Daniel</Text>
+        <Text style={styles.streakTitle}>Day {streakCount} Streak</Text>
 
         <Text style={styles.eyebrow}>FRIENDS ONLINE</Text>
         <View style={styles.friendsRow}>
@@ -129,7 +314,7 @@ export default function HomeScreen({ onBack }) {
                 <View style={[styles.dayBox, d.done ? styles.dayBoxDone : styles.dayBoxTodo]}>
                   {d.done && <Text style={styles.dayCheck}>✓</Text>}
                 </View>
-                <Text style={styles.dayLabel}>{d.label}</Text>
+                <Text style={[styles.dayLabel, d.done && styles.dayLabelDone]}>{d.label}</Text>
               </View>
             ))}
           </View>
@@ -137,7 +322,9 @@ export default function HomeScreen({ onBack }) {
             onPress={() => setLensOpen(true)}
             style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
           >
-            <Text style={styles.primaryBtnText}>Use Today's Roblox Lens</Text>
+            <Text style={styles.primaryBtnText}>
+              {thursdayDone ? 'Lens used today' : "Use Today's Roblox Lens"}
+            </Text>
           </Pressable>
         </View>
 
@@ -149,8 +336,8 @@ export default function HomeScreen({ onBack }) {
           <Image source={lensSnapcode} style={styles.lensIcon} resizeMode="cover" />
           <View style={styles.lensCopy}>
             <Text style={styles.lensEyebrow}>TODAY'S LENS</Text>
-            <Text style={styles.lensTitle}>Roblox Noob AR</Text>
-            <Text style={styles.lensSubtitle}>Transform into a classic Noob</Text>
+            <Text style={styles.lensTitle}>Roblox Cap AR</Text>
+            <Text style={styles.lensSubtitle}>Unlock today's Roblox Lens</Text>
           </View>
           <Text style={styles.lensArrow}>→</Text>
         </Pressable>
@@ -165,7 +352,14 @@ export default function HomeScreen({ onBack }) {
         <View style={{ height: spacing.xl }} />
       </ScrollView>
 
-      <LensModal visible={lensOpen} onClose={() => setLensOpen(false)} />
+      <LensModal
+        visible={lensOpen}
+        onClose={() => setLensOpen(false)}
+        onSubmit={handleSubmit}
+        alreadyDone={thursdayDone}
+      />
+
+      <ConfettiBurst active={celebrate} onDone={() => setCelebrate(false)} />
     </SafeAreaView>
   );
 }
@@ -325,6 +519,9 @@ const styles = StyleSheet.create({
     color: colors.onDarkMuted,
     marginTop: 8,
   },
+  dayLabelDone: {
+    color: colors.snapYellow,
+  },
   primaryBtn: {
     backgroundColor: '#FFFFFF',
     borderRadius: radii.pill,
@@ -458,16 +655,77 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.lg,
   },
-  modalCloseBtn: {
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
     marginTop: spacing.lg,
+    width: '100%',
+  },
+  modalGhostBtn: {
+    flex: 1,
+    borderRadius: radii.pill,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.cardBorderDark,
+  },
+  modalGhostText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 15,
+    color: colors.onDarkMuted,
+  },
+  modalSubmitBtn: {
+    flex: 1.4,
     backgroundColor: colors.snapYellow,
     borderRadius: radii.pill,
     paddingVertical: 13,
-    paddingHorizontal: 36,
+    alignItems: 'center',
   },
-  modalCloseText: {
+  modalSubmitText: {
     fontFamily: type.bodySemibold,
     fontSize: 15,
     color: colors.onYellow,
+  },
+
+  // Confetti
+  confettiLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+    elevation: 50,
+  },
+  confettiPiece: {
+    position: 'absolute',
+    top: 0,
+  },
+  celebrateBanner: {
+    position: 'absolute',
+    top: SCREEN_H * 0.32,
+    alignSelf: 'center',
+    backgroundColor: colors.cardDark,
+    borderWidth: 1,
+    borderColor: colors.snapYellow,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    minWidth: 260,
+  },
+  celebrateEyebrow: {
+    fontFamily: type.mono,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: colors.robloxRed,
+  },
+  celebrateTitle: {
+    fontFamily: type.display,
+    fontSize: 22,
+    color: colors.snapYellow,
+    marginTop: 6,
+  },
+  celebrateSub: {
+    fontFamily: type.body,
+    fontSize: 13,
+    color: colors.onDarkMuted,
+    marginTop: 4,
   },
 });
