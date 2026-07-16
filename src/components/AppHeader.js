@@ -17,7 +17,7 @@ export default function AppHeader({ onBack, streak = 4 }) {
       </Text>
 
       <View style={styles.streak}>
-        <Text style={styles.streakText}>🔥 {streak}</Text>
+        <Text style={styles.streakText}>Day {streak}</Text>
       </View>
     </View>
   );

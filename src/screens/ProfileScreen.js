@@ -1,23 +1,55 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppHeader from '../components/AppHeader';
 import { colors, type, spacing, radii } from '../theme/theme';
 import { user, friendSuggestions } from '../data/mockData';
 
 const SNAP_LOGIN_URL = 'https://accounts.snapchat.com/accounts/login';
 const ROBLOX_LOGIN_URL = 'https://www.roblox.com/login';
+const playerAvatar = require('../../assets/avatars/avatar-player.png');
 
-function ConnectRow({ label, connected, accent, url }) {
+const profileStats = [
+  { value: '850', label: 'Total XP' },
+  { value: '12', label: 'Best Streak' },
+  { value: '3', label: 'Quests Done' },
+];
+
+function StatCell({ stat }) {
+  return (
+    <View style={styles.statCell}>
+      <Text style={styles.statValue}>{stat.value}</Text>
+      <Text style={styles.statLabel}>{stat.label}</Text>
+    </View>
+  );
+}
+
+function ConnectRow({ label, glyph, connected, accent, tileColors, url }) {
   return (
     <View style={styles.connectRow}>
       <View style={styles.connectLeft}>
-        <View style={[styles.connectDot, { backgroundColor: accent }]} />
+        <LinearGradient colors={tileColors} style={styles.connectTile}>
+          <Text style={styles.connectGlyph}>{glyph}</Text>
+        </LinearGradient>
         <View>
           <Text style={styles.connectLabel}>{label}</Text>
-          <Text style={[styles.connectStatus, { color: connected ? colors.onlineGreen : colors.onDarkMuted }]}>
-            {connected ? 'Connected' : 'Not connected'}
-          </Text>
+          <View style={styles.connectStatusRow}>
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: connected ? colors.onlineGreen : colors.onDarkMuted },
+              ]}
+            />
+            <Text
+              style={[
+                styles.connectStatus,
+                { color: connected ? colors.onlineGreen : colors.onDarkMuted },
+              ]}
+            >
+              {connected ? 'Connected' : 'Not connected'}
+            </Text>
+          </View>
         </View>
       </View>
       <Pressable
@@ -28,7 +60,7 @@ function ConnectRow({ label, connected, accent, url }) {
           pressed && styles.pressed,
         ]}
       >
-        <Text style={[styles.connectBtnText, { color: connected ? colors.onDark : colors.onYellow }]}>
+        <Text style={[styles.connectBtnText, { color: connected ? colors.onDark : colors.onDark }]}>
           {connected ? 'Manage' : 'Connect'}
         </Text>
       </Pressable>
@@ -40,44 +72,66 @@ function FriendRow({ friend }) {
   const isSnap = friend.suggestFor === 'snap';
   const accent = isSnap ? colors.snapYellow : colors.robloxRed;
   const label = isSnap ? 'Add on Snap' : 'Add on Roblox';
+  const fg = isSnap ? colors.onYellow : colors.onDark;
   return (
     <View style={styles.friendRow}>
-      <View style={[styles.friendAvatar, { backgroundColor: friend.avatarColor }]}>
-        <Text style={styles.friendInitial}>{friend.name[0]}</Text>
-      </View>
+      <Image source={friend.avatar} style={styles.friendAvatar} />
       <View style={styles.friendInfo}>
         <Text style={styles.friendName}>{friend.name}</Text>
         <Text style={styles.friendMeta}>{friend.mutual}</Text>
       </View>
-      <Pressable style={({ pressed }) => [styles.addBtn, { borderColor: accent }, pressed && styles.pressed]}>
-        <Text style={[styles.addBtnText, { color: accent }]}>{label}</Text>
+      <Pressable style={({ pressed }) => [styles.addBtn, { backgroundColor: accent }, pressed && styles.pressed]}>
+        <Text style={[styles.addBtnText, { color: fg }]}>{label}</Text>
       </Pressable>
     </View>
   );
 }
 
 export default function ProfileScreen({ onBack }) {
-  const snapSuggestions = friendSuggestions.filter((f) => f.suggestFor === 'snap');
-  const robloxSuggestions = friendSuggestions.filter((f) => f.suggestFor === 'roblox');
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AppHeader onBack={onBack} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Identity */}
         <View style={styles.identity}>
-          <View style={styles.bigAvatar}>
-            <Text style={styles.bigAvatarEmoji}>🧑</Text>
+          <View style={styles.avatarWrap}>
+            <View style={styles.bigAvatar}>
+              <Image source={playerAvatar} style={styles.bigAvatarImage} />
+            </View>
+            <View style={styles.editBadge}>
+              <Text style={styles.editBadgeGlyph}>✎</Text>
+            </View>
           </View>
           <Text style={styles.name}>Player</Text>
-          <Text style={styles.handle}>@snapblox_player · Day 4 Streak 🔥</Text>
+          <Text style={styles.handle}>@snapblox_player · Day 4 Streak</Text>
+        </View>
+
+        {/* Stats */}
+        <View style={styles.statsRow}>
+          {profileStats.map((s) => (
+            <StatCell key={s.label} stat={s} />
+          ))}
         </View>
 
         {/* Connected accounts */}
         <Text style={styles.eyebrow}>CONNECTED ACCOUNTS</Text>
         <View style={styles.stack}>
-          <ConnectRow label="Snapchat" connected={user.snapConnected} accent={colors.snapYellow} url={SNAP_LOGIN_URL} />
-          <ConnectRow label="Roblox" connected={user.robloxConnected} accent={colors.robloxRed} url={ROBLOX_LOGIN_URL} />
+          <ConnectRow
+            label="Snapchat"
+            glyph="👻"
+            connected={user.snapConnected}
+            accent={colors.snapYellow}
+            tileColors={['#FFFC00', '#E6D800']}
+            url={SNAP_LOGIN_URL}
+          />
+          <ConnectRow
+            label="Roblox"
+            glyph="🎮"
+            connected={user.robloxConnected}
+            accent={colors.robloxRed}
+            tileColors={['#FF3B3B', '#B31E1E']}
+            url={ROBLOX_LOGIN_URL}
+          />
         </View>
 
         {/* Grow your squad */}
@@ -85,17 +139,8 @@ export default function ProfileScreen({ onBack }) {
         <Text style={styles.sectionNote}>
           People you know on one platform, missing from the other.
         </Text>
-
-        <Text style={styles.groupTitle}>Bring onto Roblox</Text>
         <View style={styles.stack}>
-          {snapSuggestions.map((f) => (
-            <FriendRow key={f.id} friend={f} />
-          ))}
-        </View>
-
-        <Text style={[styles.groupTitle, { marginTop: spacing.lg }]}>Bring onto Snap</Text>
-        <View style={styles.stack}>
-          {robloxSuggestions.map((f) => (
+          {friendSuggestions.map((f) => (
             <FriendRow key={f.id} friend={f} />
           ))}
         </View>
@@ -123,24 +168,45 @@ const styles = StyleSheet.create({
   identity: {
     alignItems: 'center',
     marginTop: spacing.sm,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  avatarWrap: {
+    width: 88,
+    height: 88,
   },
   bigAvatar: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: colors.cardDark,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     borderWidth: 2.5,
     borderColor: colors.snapYellow,
+    overflow: 'hidden',
+    backgroundColor: colors.cardDark,
+  },
+  bigAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.snapYellow,
+    borderWidth: 2.5,
+    borderColor: colors.pageBlack,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bigAvatarEmoji: {
-    fontSize: 40,
+  editBadgeGlyph: {
+    fontSize: 13,
+    color: colors.onYellow,
   },
   name: {
     fontFamily: type.display,
-    fontSize: 24,
+    fontSize: 26,
     color: colors.onDark,
     marginTop: spacing.md,
   },
@@ -150,6 +216,34 @@ const styles = StyleSheet.create({
     color: colors.onDarkMuted,
     marginTop: 2,
   },
+
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  statCell: {
+    flex: 1,
+    backgroundColor: colors.cardDark,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorderDark,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontFamily: type.display,
+    fontSize: 24,
+    letterSpacing: -0.5,
+    color: colors.snapYellow,
+  },
+  statLabel: {
+    fontFamily: type.body,
+    fontSize: 11.5,
+    color: colors.onDarkMuted,
+    marginTop: 2,
+  },
+
   eyebrow: {
     fontFamily: type.mono,
     fontSize: 11,
@@ -184,20 +278,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  connectDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  connectTile: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  connectGlyph: {
+    fontSize: 22,
   },
   connectLabel: {
     fontFamily: type.bodySemibold,
     fontSize: 15,
     color: colors.onDark,
   },
+  connectStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 3,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   connectStatus: {
     fontFamily: type.body,
     fontSize: 12,
-    marginTop: 2,
   },
   connectBtn: {
     borderRadius: radii.pill,
@@ -216,13 +325,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
 
-  groupTitle: {
-    fontFamily: type.displayMedium,
-    fontSize: 15,
-    color: colors.onDark,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
   friendRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,14 +337,8 @@ const styles = StyleSheet.create({
   friendAvatar: {
     width: 42,
     height: 42,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  friendInitial: {
-    fontFamily: type.display,
-    fontSize: 16,
-    color: '#FFFFFF',
+    borderRadius: 21,
+    backgroundColor: colors.cardDark,
   },
   friendInfo: {
     flex: 1,
@@ -260,10 +356,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   addBtn: {
-    borderWidth: 1.5,
     borderRadius: radii.pill,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   addBtnText: {
     fontFamily: type.bodySemibold,

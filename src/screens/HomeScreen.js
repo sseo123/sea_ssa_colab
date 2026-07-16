@@ -1,15 +1,25 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Image,
+  Modal,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../components/AppHeader';
 import { colors, type, spacing, radii } from '../theme/theme';
 
+const lensSnapcode = require('../../assets/roblox-lens-snapcode.png');
+
 const friendsOnline = [
-  { name: 'jayden_r', emoji: '🧑', platform: 'snap' },
-  { name: 'mia.snap', emoji: '👩‍🦰', platform: 'snap' },
-  { name: 'blox_kai', emoji: '🧑‍🦱', platform: 'roblox' },
-  { name: 'zara99', emoji: '🙂', platform: 'roblox' },
-  { name: 'noob_pl', emoji: '🧑‍🎤', platform: 'roblox' },
+  { name: 'jayden_r', avatar: require('../../assets/avatars/avatar-jayden.png'), platform: 'snap' },
+  { name: 'mia.snap', avatar: require('../../assets/avatars/avatar-mia.png'), platform: 'snap' },
+  { name: 'blox_kai', avatar: require('../../assets/avatars/avatar-kai.png'), platform: 'roblox' },
+  { name: 'zara99', avatar: require('../../assets/avatars/avatar-zara.png'), platform: 'roblox' },
+  { name: 'noob_pl', avatar: require('../../assets/avatars/avatar-noob.png'), platform: 'roblox' },
 ];
 
 const streakDays = [
@@ -21,18 +31,20 @@ const streakDays = [
 ];
 
 const stats = [
-  { icon: '⚔️', value: '3/5', label: 'Quests done' },
-  { icon: '⭐', value: '850', label: 'XP earned' },
-  { icon: '🎁', value: '2/4', label: 'Items unlocked' },
-  { icon: '🔥', value: '12 days', label: 'Best streak' },
+  { label: 'Quests done', value: '3/5' },
+  { label: 'XP earned', value: '850' },
+  { label: 'Items unlocked', value: '2/4' },
+  { label: 'Best streak', value: '12 days' },
 ];
 
 function FriendAvatar({ friend }) {
   const ringColor = friend.platform === 'snap' ? colors.snapYellow : colors.robloxRed;
   return (
     <View style={styles.friend}>
-      <View style={[styles.avatarRing, { borderColor: ringColor }]}>
-        <Text style={styles.avatarEmoji}>{friend.emoji}</Text>
+      <View style={styles.avatarWrap}>
+        <View style={[styles.avatarRing, { borderColor: ringColor }]}>
+          <Image source={friend.avatar} style={styles.avatarImage} />
+        </View>
         <View style={styles.onlineDot} />
       </View>
       <Text numberOfLines={1} style={styles.friendName}>{friend.name}</Text>
@@ -43,20 +55,50 @@ function FriendAvatar({ friend }) {
 function StatCard({ stat }) {
   return (
     <View style={styles.statCard}>
-      <Text style={styles.statIcon}>{stat.icon}</Text>
       <Text style={styles.statValue}>{stat.value}</Text>
       <Text style={styles.statLabel}>{stat.label}</Text>
     </View>
   );
 }
 
+function LensModal({ visible, onClose }) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.modalCard}>
+          <Text style={styles.modalEyebrow}>TODAY'S ROBLOX LENS</Text>
+          <Text style={styles.modalTitle}>Scan to open in Snapchat</Text>
+          <Image source={lensSnapcode} style={styles.snapcode} resizeMode="contain" />
+          <Text style={styles.modalHint}>
+            Point your Snapchat camera at this Snapcode to unlock the Roblox Noob AR Lens.
+          </Text>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [styles.modalCloseBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.modalCloseText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function HomeScreen({ onBack }) {
+  const [lensOpen, setLensOpen] = useState(false);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AppHeader onBack={onBack} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.welcome}>Welcome back, Player</Text>
-        <Text style={styles.streakTitle}>Day 4 Streak 🔥</Text>
+        <Text style={styles.streakTitle}>Day 4 Streak</Text>
 
         <Text style={styles.eyebrow}>FRIENDS ONLINE</Text>
         <View style={styles.friendsRow}>
@@ -79,7 +121,6 @@ export default function HomeScreen({ onBack }) {
         <View style={styles.card}>
           <View style={styles.cardTopRow}>
             <Text style={styles.cardTitle}>5-Day SnapStreak</Text>
-            <Text style={styles.cardFlame}>🔥</Text>
           </View>
           <Text style={styles.cardSubtitle}>Use a Roblox Lens each day</Text>
           <View style={styles.daysRow}>
@@ -92,14 +133,20 @@ export default function HomeScreen({ onBack }) {
               </View>
             ))}
           </View>
-          <Pressable style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}>
-            <Text style={styles.primaryBtnText}>🎒 Use Today's Roblox Lens</Text>
+          <Pressable
+            onPress={() => setLensOpen(true)}
+            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.primaryBtnText}>Use Today's Roblox Lens</Text>
           </Pressable>
         </View>
 
         {/* Today's Lens */}
-        <Pressable style={({ pressed }) => [styles.lensCard, pressed && styles.pressed]}>
-          <View style={styles.lensIcon} />
+        <Pressable
+          onPress={() => setLensOpen(true)}
+          style={({ pressed }) => [styles.lensCard, pressed && styles.pressed]}
+        >
+          <Image source={lensSnapcode} style={styles.lensIcon} resizeMode="cover" />
           <View style={styles.lensCopy}>
             <Text style={styles.lensEyebrow}>TODAY'S LENS</Text>
             <Text style={styles.lensTitle}>Roblox Noob AR</Text>
@@ -117,6 +164,8 @@ export default function HomeScreen({ onBack }) {
 
         <View style={{ height: spacing.xl }} />
       </ScrollView>
+
+      <LensModal visible={lensOpen} onClose={() => setLensOpen(false)} />
     </SafeAreaView>
   );
 }
@@ -159,17 +208,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 62,
   },
+  avatarWrap: {
+    width: 54,
+    height: 54,
+  },
   avatarRing: {
     width: 54,
     height: 54,
     borderRadius: 27,
     borderWidth: 2.5,
     backgroundColor: colors.cardDark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  avatarEmoji: {
-    fontSize: 24,
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   onlineDot: {
     position: 'absolute',
@@ -228,9 +281,6 @@ const styles = StyleSheet.create({
     color: colors.onDark,
     letterSpacing: -0.3,
   },
-  cardFlame: {
-    fontSize: 20,
-  },
   cardSubtitle: {
     fontFamily: type.body,
     fontSize: 13,
@@ -276,7 +326,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryBtn: {
-    backgroundColor: colors.snapYellow,
+    backgroundColor: '#FFFFFF',
     borderRadius: radii.pill,
     paddingVertical: 15,
     alignItems: 'center',
@@ -349,10 +399,6 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorderDark,
     padding: spacing.lg,
   },
-  statIcon: {
-    fontSize: 18,
-    marginBottom: spacing.md,
-  },
   statValue: {
     fontFamily: type.display,
     fontSize: 24,
@@ -363,6 +409,65 @@ const styles = StyleSheet.create({
     fontFamily: type.body,
     fontSize: 12,
     color: colors.onDarkMuted,
-    marginTop: 2,
+    marginTop: 6,
+  },
+
+  // Lens modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.cardDark,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorderDark,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  modalEyebrow: {
+    fontFamily: type.mono,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: colors.onDarkMuted,
+  },
+  modalTitle: {
+    fontFamily: type.display,
+    fontSize: 22,
+    color: colors.onDark,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  snapcode: {
+    width: 240,
+    height: 180,
+    borderRadius: radii.md,
+    backgroundColor: colors.snapYellow,
+  },
+  modalHint: {
+    fontFamily: type.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.onDarkMuted,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+  },
+  modalCloseBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.snapYellow,
+    borderRadius: radii.pill,
+    paddingVertical: 13,
+    paddingHorizontal: 36,
+  },
+  modalCloseText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 15,
+    color: colors.onYellow,
   },
 });

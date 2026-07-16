@@ -38,10 +38,34 @@ export const squadChallenge = {
 };
 
 export const friendSuggestions = [
-  { id: 'f1', name: 'Maya', avatarColor: '#FFD166', mutual: 'On Snap already', suggestFor: 'roblox' },
-  { id: 'f2', name: 'Deshawn', avatarColor: '#6C5CE7', mutual: 'Plays your Roblox game', suggestFor: 'snap' },
-  { id: 'f3', name: 'Priya', avatarColor: '#FF4D6D', mutual: 'On Snap already', suggestFor: 'roblox' },
-  { id: 'f4', name: 'Leo', avatarColor: '#17181C', mutual: 'Plays your Roblox game', suggestFor: 'snap' },
+  {
+    id: 'f1',
+    name: 'Maya',
+    avatar: require('../../assets/avatars/avatar-maya.png'),
+    mutual: 'On Snap already',
+    suggestFor: 'roblox',
+  },
+  {
+    id: 'f2',
+    name: 'Deshawn',
+    avatar: require('../../assets/avatars/avatar-deshawn.png'),
+    mutual: 'Plays your Roblox game',
+    suggestFor: 'snap',
+  },
+  {
+    id: 'f3',
+    name: 'Priya',
+    avatar: require('../../assets/avatars/avatar-priya.png'),
+    mutual: 'On Snap already',
+    suggestFor: 'roblox',
+  },
+  {
+    id: 'f4',
+    name: 'Leo',
+    avatar: require('../../assets/avatars/avatar-leo.png'),
+    mutual: 'Plays your Roblox game',
+    suggestFor: 'snap',
+  },
 ];
 
 export default {

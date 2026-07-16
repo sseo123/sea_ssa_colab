@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import AppHeader from '../components/AppHeader';
 import { colors, type, spacing, radii } from '../theme/theme';
+
+const AVAILABLE_XP = 500;
 
 const quests = [
   {
@@ -15,6 +18,7 @@ const quests = [
     desc: 'Send a Snap using the Roblox Noob AR Lens to a friend.',
     progress: 0,
     goal: 1,
+    gradient: ['#3A2A5E', '#1D1030'],
   },
   {
     id: 'q2',
@@ -26,6 +30,7 @@ const quests = [
     desc: 'Play 3 rounds of Snap-themed obby with your squad.',
     progress: 1,
     goal: 3,
+    gradient: ['#5E1F2A', '#2A0F16'],
   },
   {
     id: 'q3',
@@ -37,27 +42,30 @@ const quests = [
     desc: 'Maintain your 5-day SnapStreak using any Roblox Lens.',
     progress: 4,
     goal: 5,
+    gradient: ['#4A431A', '#241F0C'],
   },
 ];
 
 const rewards = [
   {
     id: 'r1',
-    emoji: '🟡',
+    emoji: '🧢',
     kind: 'snap',
     category: 'SNAP ACCESSORY',
     title: 'Roblox Noob Hat',
     source: 'Bitmoji',
     unlocked: true,
+    gradient: ['#4A431A', '#201C0A'],
   },
   {
     id: 'r2',
-    emoji: '👻',
+    emoji: '🪽',
     kind: 'roblox',
     category: 'ROBLOX ITEM',
     title: 'Snap Ghost Wings',
     source: 'Avatar Shop',
     unlocked: true,
+    gradient: ['#5E1F2A', '#260E14'],
   },
   {
     id: 'r3',
@@ -67,6 +75,7 @@ const rewards = [
     title: 'Creeper Crown',
     source: 'Bitmoji',
     unlocked: false,
+    gradient: ['#2A2A2A', '#161616'],
   },
   {
     id: 'r4',
@@ -76,14 +85,40 @@ const rewards = [
     title: 'Snap Streak Aura',
     source: 'Avatar Shop',
     unlocked: false,
+    gradient: ['#2A2A2A', '#161616'],
   },
 ];
 
 const tagStyles = {
-  daily: { bg: colors.snapYellow, fg: colors.onYellow },
-  event: { bg: colors.robloxRed, fg: colors.onDark },
-  weekly: { bg: 'rgba(255,255,255,0.9)', fg: colors.onYellow },
+  daily: { bg: colors.snapYellow, fg: colors.onYellow, fill: colors.snapYellow },
+  event: { bg: colors.robloxRed, fg: colors.onDark, fill: colors.robloxRed },
+  weekly: { bg: 'rgba(255,255,255,0.9)', fg: colors.onYellow, fill: colors.snapYellow },
 };
+
+function SegmentedControl({ tabs, active, onChange }) {
+  return (
+    <View style={styles.segment}>
+      {tabs.map((tab) => {
+        const isActive = tab.key === active;
+        return (
+          <Pressable
+            key={tab.key}
+            onPress={() => onChange(tab.key)}
+            style={({ pressed }) => [
+              styles.segmentBtn,
+              isActive && styles.segmentBtnActive,
+              pressed && !isActive && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 function QuestCard({ quest }) {
   const tag = tagStyles[quest.tagKind];
@@ -91,29 +126,31 @@ function QuestCard({ quest }) {
   return (
     <View style={styles.questCard}>
       <View style={styles.questTop}>
-        <View style={styles.questIcon}>
-          <Text style={styles.questIconGlyph}>{quest.icon}</Text>
-        </View>
+        <LinearGradient colors={quest.gradient} style={styles.questThumb}>
+          <Text style={styles.questThumbGlyph}>{quest.icon}</Text>
+        </LinearGradient>
         <View style={styles.questHead}>
           <View style={styles.questTagRow}>
             <View style={[styles.tag, { backgroundColor: tag.bg }]}>
               <Text style={[styles.tagText, { color: tag.fg }]}>{quest.tag}</Text>
             </View>
-            <Text style={styles.xp}>{quest.xp}</Text>
+            <View style={styles.xpPill}>
+              <Text style={styles.xpText}>{quest.xp}</Text>
+            </View>
           </View>
           <Text style={styles.questTitle}>{quest.title}</Text>
+          <Text style={styles.questDesc}>{quest.desc}</Text>
         </View>
       </View>
-      <Text style={styles.questDesc}>{quest.desc}</Text>
       <View style={styles.progressRow}>
-        <Text style={styles.progressLabel}>Progress</Text>
+        <Text style={styles.progressLabel}>PROGRESS</Text>
         <Text style={styles.progressValue}>{quest.progress}/{quest.goal}</Text>
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+        <View style={[styles.fill, { width: `${pct * 100}%`, backgroundColor: tag.fill }]} />
       </View>
       <Pressable style={({ pressed }) => [styles.questBtn, pressed && styles.pressed]}>
-        <Text style={styles.questBtnText}>Start Challenge →</Text>
+        <Text style={styles.questBtnText}>Start Challenge  →</Text>
       </Pressable>
     </View>
   );
@@ -121,59 +158,94 @@ function QuestCard({ quest }) {
 
 function RewardCard({ reward }) {
   const accent = reward.kind === 'snap' ? colors.snapYellow : colors.robloxRed;
-  const tintBg = reward.kind === 'snap' ? 'rgba(255,252,0,0.06)' : 'rgba(255,59,59,0.07)';
+  const badgeFg = reward.kind === 'snap' ? colors.onYellow : colors.onDark;
   return (
     <View style={[styles.rewardCard, !reward.unlocked && styles.rewardLocked]}>
-      <View style={[styles.rewardImage, { backgroundColor: tintBg }]}>
+      <LinearGradient colors={reward.gradient} style={styles.rewardImage}>
         <Text style={styles.rewardEmoji}>{reward.unlocked ? reward.emoji : '🔒'}</Text>
-      </View>
-      <Text style={[styles.rewardCategory, { color: accent }]}>{reward.category}</Text>
+        {reward.unlocked && (
+          <View style={[styles.rewardBadge, { backgroundColor: accent }]}>
+            <Text style={[styles.rewardBadgeText, { color: badgeFg }]}>✓</Text>
+          </View>
+        )}
+      </LinearGradient>
+      <Text style={[styles.rewardCategory, { color: reward.unlocked ? accent : colors.onDarkMuted }]}>
+        {reward.category}
+      </Text>
       <Text style={styles.rewardTitle}>{reward.title}</Text>
       <Text style={styles.rewardSource}>{reward.source}</Text>
-      {reward.unlocked && (
+      {reward.unlocked ? (
         <Pressable style={({ pressed }) => [styles.equipBtn, { backgroundColor: accent }, pressed && styles.pressed]}>
-          <Text style={styles.equipText}>Equip</Text>
+          <Text style={[styles.equipText, { color: badgeFg }]}>Equip</Text>
         </Pressable>
+      ) : (
+        <View style={styles.lockedBtn}>
+          <Text style={styles.lockedBtnText}>Locked</Text>
+        </View>
       )}
     </View>
   );
 }
 
 export default function PrizesScreen({ onBack }) {
+  const [tab, setTab] = useState('quests');
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AppHeader onBack={onBack} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Quests */}
-        <Text style={styles.heading}>Active Quests</Text>
-        <Text style={styles.subheading}>Complete quests to earn XP and unlock rewards</Text>
-        <View style={styles.stack}>
-          {quests.map((q) => (
-            <QuestCard key={q.id} quest={q} />
-          ))}
-        </View>
+        <Text style={styles.heading}>Prizes</Text>
+        <Text style={styles.subheading}>Complete quests, unlock rewards</Text>
 
-        {/* Rewards */}
-        <Text style={[styles.heading, { marginTop: spacing.xxl }]}>Your Rewards</Text>
-        <Text style={styles.subheading}>Accessories for your Bitmoji and Roblox avatar</Text>
-        <View style={styles.legendRow}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.snapYellow }]} />
-            <Text style={styles.legendText}>Snap Accessory</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.robloxRed }]} />
-            <Text style={styles.legendText}>Roblox Item</Text>
-          </View>
-        </View>
-        <View style={styles.rewardGrid}>
-          {rewards.map((r) => (
-            <RewardCard key={r.id} reward={r} />
-          ))}
-        </View>
-        <View style={styles.lockedBanner}>
-          <Text style={styles.lockedText}>🔒 Complete quests to unlock 2 more items</Text>
-        </View>
+        <SegmentedControl
+          tabs={[
+            { key: 'quests', label: 'Quests' },
+            { key: 'rewards', label: 'Rewards' },
+          ]}
+          active={tab}
+          onChange={setTab}
+        />
+
+        {tab === 'quests' ? (
+          <>
+            <View style={styles.xpCard}>
+              <View>
+                <Text style={styles.xpCardEyebrow}>AVAILABLE XP</Text>
+                <Text style={styles.xpCardValue}>{AVAILABLE_XP} XP</Text>
+              </View>
+              <View style={styles.xpCardIcon}>
+                <Text style={styles.xpCardStar}>★</Text>
+              </View>
+            </View>
+
+            <View style={styles.stack}>
+              {quests.map((q) => (
+                <QuestCard key={q.id} quest={q} />
+              ))}
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.snapYellow }]} />
+                <Text style={styles.legendText}>Snap Accessory</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.robloxRed }]} />
+                <Text style={styles.legendText}>Roblox Item</Text>
+              </View>
+            </View>
+            <View style={styles.rewardGrid}>
+              {rewards.map((r) => (
+                <RewardCard key={r.id} reward={r} />
+              ))}
+            </View>
+            <View style={styles.lockedBanner}>
+              <Text style={styles.lockedText}>🔒 Complete quests to unlock 2 more items</Text>
+            </View>
+          </>
+        )}
 
         <View style={{ height: spacing.xl }} />
       </ScrollView>
@@ -192,7 +264,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: type.display,
-    fontSize: 28,
+    fontSize: 32,
     letterSpacing: -0.5,
     color: colors.onDark,
     marginTop: spacing.sm,
@@ -208,6 +280,73 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
 
+  // Segmented control
+  segment: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    backgroundColor: colors.cardDark,
+    borderWidth: 1,
+    borderColor: colors.cardBorderDark,
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.snapYellow,
+    borderColor: colors.snapYellow,
+  },
+  segmentText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 14,
+    color: colors.onDarkMuted,
+  },
+  segmentTextActive: {
+    color: colors.onYellow,
+  },
+
+  // Available XP card
+  xpCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.cardDark,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorderDark,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  xpCardEyebrow: {
+    fontFamily: type.mono,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: colors.onDarkMuted,
+  },
+  xpCardValue: {
+    fontFamily: type.display,
+    fontSize: 30,
+    letterSpacing: -0.5,
+    color: colors.snapYellow,
+    marginTop: 4,
+  },
+  xpCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: colors.cardBorderDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  xpCardStar: {
+    fontSize: 20,
+    color: colors.onDarkMuted,
+  },
+
   // Quest card
   questCard: {
     backgroundColor: colors.cardDark,
@@ -220,18 +359,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  questIcon: {
-    width: 44,
-    height: 44,
+  questThumb: {
+    width: 56,
+    height: 56,
     borderRadius: radii.md,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: colors.cardBorderDark,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  questIconGlyph: {
-    fontSize: 20,
+  questThumbGlyph: {
+    fontSize: 26,
   },
   questHead: {
     flex: 1,
@@ -251,33 +387,40 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
   },
-  xp: {
-    fontFamily: type.bodyMedium,
-    fontSize: 12,
-    color: colors.onDarkMuted,
+  xpPill: {
+    borderRadius: radii.pill,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  xpText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 11,
+    color: colors.onDark,
   },
   questTitle: {
     fontFamily: type.bodySemibold,
     fontSize: 17,
     color: colors.onDark,
-    marginTop: 6,
+    marginTop: 8,
   },
   questDesc: {
     fontFamily: type.body,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13.5,
+    lineHeight: 19,
     color: colors.onDarkMuted,
-    marginTop: spacing.md,
+    marginTop: 4,
   },
   progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
   progressLabel: {
-    fontFamily: type.body,
-    fontSize: 12,
+    fontFamily: type.mono,
+    fontSize: 11,
+    letterSpacing: 1,
     color: colors.onDarkMuted,
   },
   progressValue: {
@@ -295,20 +438,17 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     borderRadius: radii.pill,
-    backgroundColor: colors.snapYellow,
   },
   questBtn: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: colors.cardBorderDark,
-    borderRadius: radii.pill,
-    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorderDark,
+    paddingTop: spacing.md,
     alignItems: 'center',
   },
   questBtnText: {
     fontFamily: type.bodySemibold,
     fontSize: 14,
-    color: colors.onDark,
+    color: colors.onDarkMuted,
   },
   pressed: {
     opacity: 0.85,
@@ -363,6 +503,20 @@ const styles = StyleSheet.create({
   rewardEmoji: {
     fontSize: 44,
   },
+  rewardBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rewardBadgeText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 13,
+  },
   rewardCategory: {
     fontFamily: type.mono,
     fontSize: 10,
@@ -389,7 +543,19 @@ const styles = StyleSheet.create({
   equipText: {
     fontFamily: type.bodySemibold,
     fontSize: 14,
-    color: colors.onYellow,
+  },
+  lockedBtn: {
+    borderRadius: radii.pill,
+    paddingVertical: 11,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: colors.cardBorderDark,
+  },
+  lockedBtnText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 14,
+    color: colors.onDarkMuted,
   },
   lockedBanner: {
     backgroundColor: 'rgba(255,255,255,0.04)',
