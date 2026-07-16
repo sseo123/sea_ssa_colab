@@ -1,5 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Image } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Linking,
+  Image,
+  Modal,
+  Dimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppHeader from '../components/AppHeader';
@@ -9,6 +19,8 @@ import { user, friendSuggestions } from '../data/mockData';
 const SNAP_LOGIN_URL = 'https://accounts.snapchat.com/accounts/login';
 const ROBLOX_LOGIN_URL = 'https://www.roblox.com/login';
 const playerAvatar = require('../../assets/avatars/avatar-player.png');
+const { width: SCREEN_W } = Dimensions.get('window');
+const AVATAR_PREVIEW_SIZE = Math.min(SCREEN_W - spacing.lg * 2, 340);
 
 const profileStats = [
   { value: '850', label: 'Total XP' },
@@ -87,21 +99,53 @@ function FriendRow({ friend }) {
   );
 }
 
+function AvatarPreviewModal({ visible, onClose }) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={onClose}
+    >
+      <View style={styles.previewBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.previewCard} pointerEvents="box-none">
+          <Image source={playerAvatar} style={styles.previewImage} resizeMode="cover" />
+          <Text style={styles.previewName}>Daniel Koo</Text>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [styles.previewCloseBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.previewCloseText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function ProfileScreen({ onBack }) {
+  const [avatarOpen, setAvatarOpen] = useState(false);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <AppHeader onBack={onBack} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Identity */}
         <View style={styles.identity}>
-          <View style={styles.avatarWrap}>
+          <Pressable
+            onPress={() => setAvatarOpen(true)}
+            style={({ pressed }) => [styles.avatarWrap, pressed && styles.pressed]}
+          >
             <View style={styles.bigAvatar}>
               <Image source={playerAvatar} style={styles.bigAvatarImage} />
             </View>
             <View style={styles.editBadge}>
               <Text style={styles.editBadgeGlyph}>✎</Text>
             </View>
-          </View>
+          </Pressable>
           <Text style={styles.name}>Daniel Koo</Text>
           <Text style={styles.handle}>@daniel_da_destroyer · Day 4 Streak</Text>
         </View>
@@ -152,6 +196,8 @@ export default function ProfileScreen({ onBack }) {
 
         <View style={{ height: spacing.xl }} />
       </ScrollView>
+
+      <AvatarPreviewModal visible={avatarOpen} onClose={() => setAvatarOpen(false)} />
     </SafeAreaView>
   );
 }
@@ -370,5 +416,44 @@ const styles = StyleSheet.create({
     color: colors.onDarkMuted,
     marginTop: spacing.xl,
     lineHeight: 17,
+  },
+
+  previewBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  previewCard: {
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: AVATAR_PREVIEW_SIZE + spacing.lg * 2,
+  },
+  previewImage: {
+    width: AVATAR_PREVIEW_SIZE,
+    height: AVATAR_PREVIEW_SIZE,
+    borderRadius: AVATAR_PREVIEW_SIZE / 2,
+    borderWidth: 3,
+    borderColor: colors.snapYellow,
+    backgroundColor: colors.cardDark,
+  },
+  previewName: {
+    fontFamily: type.display,
+    fontSize: 22,
+    color: colors.onDark,
+    marginTop: spacing.lg,
+  },
+  previewCloseBtn: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.snapYellow,
+    borderRadius: radii.pill,
+    paddingVertical: 12,
+    paddingHorizontal: 36,
+  },
+  previewCloseText: {
+    fontFamily: type.bodySemibold,
+    fontSize: 15,
+    color: colors.onYellow,
   },
 });

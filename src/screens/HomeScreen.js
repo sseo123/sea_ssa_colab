@@ -225,16 +225,15 @@ function ConfettiBurst({ active, onDone }) {
   );
 }
 
-function LensModal({ visible, onClose, onSubmit, alreadyDone }) {
+function LensModal({ visible, onSubmit, alreadyDone }) {
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={onSubmit}
     >
       <View style={styles.modalBackdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.modalCard}>
           <Text style={styles.modalEyebrow}>TODAY'S ROBLOX LENS</Text>
           <Text style={styles.modalTitle}>Scan to open in Snapchat</Text>
@@ -243,22 +242,14 @@ function LensModal({ visible, onClose, onSubmit, alreadyDone }) {
             Point your Snapchat camera at this Snapcode to unlock today's Roblox Lens, then hit
             Submit to log your streak day.
           </Text>
-          <View style={styles.modalActions}>
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [styles.modalGhostBtn, pressed && styles.pressed]}
-            >
-              <Text style={styles.modalGhostText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={onSubmit}
-              style={({ pressed }) => [styles.modalSubmitBtn, pressed && styles.pressed]}
-            >
-              <Text style={styles.modalSubmitText}>
-                {alreadyDone ? 'Done' : 'Submit'}
-              </Text>
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={onSubmit}
+            style={({ pressed }) => [styles.modalSubmitBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.modalSubmitText}>
+              {alreadyDone ? 'Done' : 'Submit'}
+            </Text>
+          </Pressable>
         </View>
       </View>
     </Modal>
@@ -365,7 +356,6 @@ export default function HomeScreen({ onBack }) {
 
       <LensModal
         visible={lensOpen}
-        onClose={() => setLensOpen(false)}
         onSubmit={handleSubmit}
         alreadyDone={thursdayDone}
       />
@@ -653,8 +643,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   snapcode: {
-    width: 240,
-    height: 180,
+    width: Math.min(SCREEN_W - spacing.lg * 2 - 32, 320),
+    height: Math.min(SCREEN_W - spacing.lg * 2 - 32, 320) * 0.9,
     borderRadius: radii.md,
     backgroundColor: colors.snapYellow,
   },
@@ -666,30 +656,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.lg,
   },
-  modalActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  modalSubmitBtn: {
     marginTop: spacing.lg,
     width: '100%',
-  },
-  modalGhostBtn: {
-    flex: 1,
-    borderRadius: radii.pill,
-    paddingVertical: 13,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.cardBorderDark,
-  },
-  modalGhostText: {
-    fontFamily: type.bodySemibold,
-    fontSize: 15,
-    color: colors.onDarkMuted,
-  },
-  modalSubmitBtn: {
-    flex: 1.4,
     backgroundColor: colors.snapYellow,
     borderRadius: radii.pill,
-    paddingVertical: 13,
+    paddingVertical: 15,
     alignItems: 'center',
   },
   modalSubmitText: {
