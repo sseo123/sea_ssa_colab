@@ -99,7 +99,8 @@ export default function LandingScreen({ onEnter }) {
 
           <Text style={styles.heroTitle}>
             Snapchat{'\n'}
-            <Text style={styles.heroTitleAlt}>× Roblox</Text>
+            <Text style={styles.heroTitleX}>×</Text>
+            <Text style={styles.heroTitleAlt}> Roblox</Text>
           </Text>
 
           <Text style={styles.heroSubtitle}>
@@ -325,6 +326,11 @@ const styles = StyleSheet.create({
     lineHeight: 48,
     letterSpacing: -1.5,
     color: colors.onYellow,
+  },
+  heroTitleX: {
+    fontFamily: type.display,
+    fontSize: 46,
+    color: colors.robloxRed,
   },
   heroTitleAlt: {
     fontFamily: type.display,
