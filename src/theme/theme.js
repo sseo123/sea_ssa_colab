@@ -14,6 +14,15 @@ export const colors = {
   textMuted: '#9498A0',
   border: 'rgba(23,24,28,0.08)',
   voxelShadow: 'rgba(23,24,28,0.12)',
+
+  // SnapBlox landing palette — black canvas, Snap-yellow accent.
+  pageBlack: '#000000',
+  cardDark: '#161616',
+  cardBorderDark: 'rgba(255,255,255,0.08)',
+  onDark: '#FFFFFF',
+  onDarkMuted: 'rgba(255,255,255,0.62)',
+  onYellow: '#0A0A0A',
+  onYellowMuted: 'rgba(10,10,10,0.62)',
 };
 
 export const type = {
